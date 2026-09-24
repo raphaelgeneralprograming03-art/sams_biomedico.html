@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SROS // TRIADE SYSTEM - Módulo SAMS</title>
+    <title>SROS // TRIADE SYSTEM - Módulo SAMS JARVIS</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #080404; font-family: 'Courier New', Courier, monospace; color: #ff3333; }
@@ -40,7 +40,7 @@
     <div class="legend">
         <div class="legend-item"><span class="dot" style="background:#ff3333;"></span>Eletrocardiograma Ativo</div>
         <div class="legend-item"><span class="dot" style="background:#00ff66;"></span>Vaporizadores Médicos Prontos</div>
-        <div class="legend-item"><span class="dot" style="background:#ffffff;"></span>Disparo Automático de Dose</div>
+        <div class="legend-item"><span class="dot" style="background:#ffffff;"></span>Visão Interna do Capacete</div>
     </div>
 
     <button class="btn-action" id="trigger-arrhythmia">INDUZIR ARRITMIA CARDÍACA GRAVE</button>
@@ -63,10 +63,11 @@
         let injecoes = 5;
         let doseRecente = "NENHUMA";
         let cooldownMed = 0;
+        let pulsoHUD = 0;
 
         // Histórico de pontos para desenhar a linha do ECG
         const ecgPontos = [];
-        const maxPontos = 150;
+        const maxPontos = 100; // Otimizado para caber dentro da mira do HUD
         let ecgX = 0;
 
         // Partículas das injeções médicas (Vaporizadores intramusculares)
@@ -80,23 +81,20 @@
 
         function gerarPontoECG() {
             ecgX += 1;
-            let tempo = ecgX * 0.15;
+            let tempo = ecgX * 0.2;
             let baseBPM = modoArritmia ? 165 : 72;
             
-            // Frequência do batimento baseada no BPM atual
             let ciclo = (tempo * (baseBPM / 60)) % (Math.PI * 2);
             let y = 0;
 
-            // Simulação da onda do complexo P-Q-R-S-T cardíaco
-            if (ciclo < 0.3) y = Math.sin(ciclo * Math.PI / 0.3) * -5; // Onda P
-            else if (ciclo >= 0.4 && ciclo < 0.5) y = (ciclo - 0.4) * 20; // Q
-            else if (ciclo >= 0.5 && ciclo < 0.65) y = -70 + (Math.random() * (modoArritmia ? 25 : 0)); // R
-            else if (ciclo >= 0.65 && ciclo < 0.8) y = 25; // S
-            else if (ciclo >= 0.9 && ciclo < 1.3) y = Math.sin((ciclo - 0.9) * Math.PI / 0.4) * -12; // Onda T
+            if (ciclo < 0.3) y = Math.sin(ciclo * Math.PI / 0.3) * -4; 
+            else if (ciclo >= 0.4 && ciclo < 0.5) y = (ciclo - 0.4) * 15; 
+            else if (ciclo >= 0.5 && ciclo < 0.65) y = -50 + (Math.random() * (modoArritmia ? 20 : 0)); 
+            else if (ciclo >= 0.65 && ciclo < 0.8) y = 15; 
+            else if (ciclo >= 0.9 && ciclo < 1.3) y = Math.sin((ciclo - 0.9) * Math.PI / 0.4) * -8; 
 
-            // Adiciona ruído se estiver em arritmia cardíaca
             if (modoArritmia) {
-                y += (Math.random() - 0.5) * 15;
+                y += (Math.random() - 0.5) * 12;
             }
 
             ecgPontos.push(y);
@@ -108,39 +106,38 @@
         function dispararInjecao() {
             if (injecoes > 0 && cooldownMed <= 0) {
                 injecoes--;
-                cooldownMed = 300; // Impede disparos simultâneos
+                cooldownMed = 250; 
                 doseRecente = "ESTABILIZADOR METABÓLICO";
                 
-                // Dispara efeito visual de spray médico de contramedida
-                for (let i = 0; i < 30; i++) {
+                for (let i = 0; i < 25; i++) {
                     particulasMedicas.push({
-                        x: canvas.width / 2 + (Math.random() - 0.5) * 40,
-                        y: canvas.height * 0.75,
-                        vx: (Math.random() - 0.5) * 4,
-                        vy: -Math.random() * 3 - 1,
+                        x: canvas.width / 2 + (Math.random() - 0.5) * 60,
+                        y: canvas.height * 0.7,
+                        vx: (Math.random() - 0.5) * 3,
+                        vy: -Math.random() * 2 - 1,
                         vida: 1.0,
-                        tamanho: 3 + Math.random() * 3
+                        tamanho: 2 + Math.random() * 3
                     });
                 }
             }
         }
 
         function draw() {
-            // Limpa com fundo escuro hospitalar/militar
-            ctx.fillStyle = '#100404';
+            // Limpa com o fundo da interface HUD escura
+            ctx.fillStyle = '#0f0505';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
+            pulsoHUD += 0.025;
 
-            // Atualiza lógica dos sinais biométricos computados pelo SAMS
+            // Lógica biométrica
             if (modoArritmia) {
-                bpm = Math.min(178, bpm + 2);
-                spo2 = Math.max(86, spo2 - 0.1);
+                bpm = Math.min(176, bpm + 2);
+                spo2 = Math.max(85, spo2 - 0.15);
                 statusEl.innerText = "CRÍTICO: ARRITMIA";
                 statusEl.className = "status-alert";
                 
-                // Resposta Autônoma do Traje SAMS: Aplica o medicamento se o quadro for severo
                 if (bpm > 150 && cooldownMed <= 0) {
                     dispararInjecao();
                 }
@@ -155,65 +152,63 @@
 
             if (cooldownMed > 0) {
                 cooldownMed--;
-                if (cooldownMed === 1) modoArritmia = false; // O remédio faz efeito
+                if (cooldownMed === 1) modoArritmia = false; 
             }
 
-            // Gera e avança o traçado do monitor cardíaco
             gerarPontoECG();
 
-            // 1. DESENHAR A GRADE E MONITOR DO ELETROCARDIOGRAMA (ECG)
-            ctx.strokeStyle = modoArritmia ? 'rgba(255, 51, 51, 0.1)' : 'rgba(0, 255, 102, 0.1)';
-            ctx.lineWidth = 1;
+            // ==========================================
+            // NOVO: VISÃO INTERNA DO CAPACETE (ESTILO IRON MAN)
+            // ==========================================
+            ctx.strokeStyle = modoArritmia ? 'rgba(255, 51, 51, 0.2)' : 'rgba(0, 255, 102, 0.15)';
+            ctx.lineWidth = 4;
             
-            // Desenha linhas de fundo do osciloscópio
-            let ecgYBase = centerY - 60;
+            // Desenho dos arcos curvos da viseira interna ocular
+            let raioViseira = Math.min(canvas.width, canvas.height) * 0.42;
             ctx.beginPath();
-            ctx.moveTo(0, ecgYBase);
-            ctx.lineTo(canvas.width, ecgYBase);
+            ctx.arc(centerX, centerY, raioViseira, 0.15 * Math.PI, 0.85 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, raioViseira, 1.15 * Math.PI, 1.85 * Math.PI);
+            ctx.stroke();
+
+            // Elementos de mira holográfica centrais do olhar
+            ctx.strokeStyle = modoArritmia ? 'rgba(255, 51, 51, 0.4)' : 'rgba(0, 255, 102, 0.3)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - 40, 25, 0, Math.PI * 2);
             ctx.stroke();
             
-            // Desenha a linha dinâmica do batimento cardíaco
+            // Cantoneiras holográficas táticas envolventes
+            let d = 50 + Math.sin(pulsoHUD) * 2;
+            ctx.beginPath();
+            ctx.moveTo(centerX - d, centerY - 80); ctx.lineTo(centerX - d - 10, centerY - 80); ctx.lineTo(centerX - d - 10, centerY - 60);
+            ctx.moveTo(centerX + d, centerY - 80); ctx.lineTo(centerX + d + 10, centerY - 80); ctx.lineTo(centerX + d + 10, centerY - 60);
+            ctx.stroke();
+
+            // ==========================================
+            // DESENHO DO PROJETO ORIGINAL CONCLUÍDO (ECG E COMPONENTES)
+            // ==========================================
+            let ecgYBase = centerY - 40;
+            
+            // Desenha a linha dinâmica do batimento cardíaco holográfico
             ctx.lineWidth = 2.5;
             ctx.strokeStyle = modoArritmia ? '#ff3333' : '#00ff66';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = modoArritmia ? '#ff3333' : '#00ff66';
             ctx.beginPath();
             
-            let inicioX = centerX - (maxPontos * 2) / 2;
+            let inicioX = centerX - (maxPontos * 2.4) / 2;
 
             for (let i = 0; i < ecgPontos.length; i++) {
-                let x = inicioX + (i * 2);
+                let x = inicioX + (i * 2.4);
                 let y = ecgYBase + ecgPontos[i];
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
             ctx.stroke();
+            ctx.shadowBlur = 0; // Reseta efeitos de brilho
 
-            // 2. DESENHAR MÓDULO FÍSICO DE MICROINJETORES (Parte inferior)
+            // Painel físico inferior de injetores médicos
             ctx.strokeStyle = modoArritmia ? '#ff3333' : '#00ff66';
             ctx.lineWidth = 2;
-            ctx.fillStyle = 'rgba(255, 51, 51, 0.05)';
-            ctx.fillRect(centerX - 60, centerY + 100, 120, 50);
-            ctx.strokeRect(centerX - 60, centerY + 100, 120, 50);
-
-            // Desenha 5 slots de ampolas médicas
-            for(let i = 0; i < 5; i++) {
-                ctx.fillStyle = i < injecoes ? '#00ff66' : '#333333';
-                ctx.fillRect(centerX - 50 + (i * 20), centerY + 115, 12, 20);
-            }
-
-            // 3. RENDERIZAR NUVEM DE VAPORIZAÇÃO DA INJEÇÃO MÉDICA
-            particulasMedicas.forEach((p, idx) => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vida -= 0.015;
-
-                ctx.fillStyle = `rgba(255, 255, 255, ${p.vida})`;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.tamanho, 0, Math.PI * 2);
-                ctx.fill();
-
-                if (p.vida <= 0) {
-                    particulasMedicas.splice(idx, 1);
-                }
-            });
-
-            // 4. ATUALIZAR HUD DE TELEMETRIA
