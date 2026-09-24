@@ -90,7 +90,7 @@
             // Simulação da onda do complexo P-Q-R-S-T cardíaco
             if (ciclo < 0.3) y = Math.sin(ciclo * Math.PI / 0.3) * -5; // Onda P
             else if (ciclo >= 0.4 && ciclo < 0.5) y = (ciclo - 0.4) * 20; // Q
-            else if (ciclo >= 0.5 && ciclo < 0.65) y = -70 + (Math.random() * (modoArritmia ? 25 : 0)); // R (Pico alto / instável na arritmia)
+            else if (ciclo >= 0.5 && ciclo < 0.65) y = -70 + (Math.random() * (modoArritmia ? 25 : 0)); // R
             else if (ciclo >= 0.65 && ciclo < 0.8) y = 25; // S
             else if (ciclo >= 0.9 && ciclo < 1.3) y = Math.sin((ciclo - 0.9) * Math.PI / 0.4) * -12; // Onda T
 
@@ -108,7 +108,7 @@
         function dispararInjecao() {
             if (injecoes > 0 && cooldownMed <= 0) {
                 injecoes--;
-                cooldownMed = 300; // Impede injeções coladas
+                cooldownMed = 300; // Impede disparos simultâneos
                 doseRecente = "ESTABILIZADOR METABÓLICO";
                 
                 // Dispara efeito visual de spray médico de contramedida
@@ -155,23 +155,29 @@
 
             if (cooldownMed > 0) {
                 cooldownMed--;
-                if (cooldownMed === 1) modoArritmia = false; // O remédio surte efeito e cura a arritmia
+                if (cooldownMed === 1) modoArritmia = false; // O remédio faz efeito
             }
 
             // Gera e avança o traçado do monitor cardíaco
             gerarPontoECG();
 
-            // 1. DESENHAR A REDE E MONITOR DO ELETROCARDIOGRAMA (ECG)
-            ctx.strokeStyle = modoArritmia ? 'rgba(255, 51, 51, 0.4)' : 'rgba(0, 255, 102, 0.4)';
-            ctx.lineWidth = 25;
+            // 1. DESENHAR A GRADE E MONITOR DO ELETROCARDIOGRAMA (ECG)
+            ctx.strokeStyle = modoArritmia ? 'rgba(255, 51, 51, 0.1)' : 'rgba(0, 255, 102, 0.1)';
+            ctx.lineWidth = 1;
             
-            // Desenha a linha verde/vermelha oscilante na metade superior da tela
+            // Desenha linhas de fundo do osciloscópio
+            let ecgYBase = centerY - 60;
+            ctx.beginPath();
+            ctx.moveTo(0, ecgYBase);
+            ctx.lineTo(canvas.width, ecgYBase);
+            ctx.stroke();
+            
+            // Desenha a linha dinâmica do batimento cardíaco
             ctx.lineWidth = 2.5;
             ctx.strokeStyle = modoArritmia ? '#ff3333' : '#00ff66';
             ctx.beginPath();
             
             let inicioX = centerX - (maxPontos * 2) / 2;
-            let ecgYBase = centerY - 60;
 
             for (let i = 0; i < ecgPontos.length; i++) {
                 let x = inicioX + (i * 2);
@@ -182,7 +188,7 @@
             ctx.stroke();
 
             // 2. DESENHAR MÓDULO FÍSICO DE MICROINJETORES (Parte inferior)
-            ctx.strokeStyle = '#ff3333';
+            ctx.strokeStyle = modoArritmia ? '#ff3333' : '#00ff66';
             ctx.lineWidth = 2;
             ctx.fillStyle = 'rgba(255, 51, 51, 0.05)';
             ctx.fillRect(centerX - 60, centerY + 100, 120, 50);
@@ -211,6 +217,3 @@
             });
 
             // 4. ATUALIZAR HUD DE TELEMETRIA
-            bpmEl.innerText = Math.floor(bpm) + " BPM";
-            spo2El.innerText = Math.floor(spo2) + "%";
-            injEl.innerText = "0" + injecoes + "/05";
