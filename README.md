@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -67,7 +67,7 @@
 
         // Histórico de pontos para desenhar a linha do ECG
         const ecgPontos = [];
-        const maxPontos = 100; // Otimizado para caber dentro da mira do HUD
+        const maxPontos = 100;
         let ecgX = 0;
 
         // Partículas das injeções médicas (Vaporizadores intramusculares)
@@ -78,6 +78,12 @@
         const injEl = document.getElementById('inj-val');
         const doseEl = document.getElementById('dose-val');
         const statusEl = document.getElementById('status-sams');
+        const btnToggle = document.getElementById('trigger-arrhythmia');
+
+        btnToggle.addEventListener('click', () => {
+            modoArritmia = !modoArritmia;
+            btnToggle.innerText = modoArritmia ? "ESTABILIZAR RITMO CARDÍACO" : "INDUZIR ARRITMIA CARDÍACA GRAVE";
+        });
 
         function gerarPontoECG() {
             ecgX += 1;
@@ -109,22 +115,22 @@
                 cooldownMed = 250; 
                 doseRecente = "ESTABILIZADOR METABÓLICO";
                 
-                for (let i = 0; i < 25; i++) {
+                for (let i = 0; i < 40; i++) {
                     particulasMedicas.push({
-                        x: canvas.width / 2 + (Math.random() - 0.5) * 60,
-                        y: canvas.height * 0.7,
-                        vx: (Math.random() - 0.5) * 3,
-                        vy: -Math.random() * 2 - 1,
+                        x: canvas.width / 2 + (Math.random() - 0.5) * 120,
+                        y: canvas.height / 2 + 120,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: -Math.random() * 3 - 1,
                         vida: 1.0,
-                        tamanho: 2 + Math.random() * 3
+                        tamanho: 3 + Math.random() * 4
                     });
                 }
             }
         }
 
         function draw() {
-            // Limpa com o fundo da interface HUD escura
-            ctx.fillStyle = '#0f0505';
+            // Fundo escuro do HUD
+            ctx.fillStyle = '#080404';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const centerX = canvas.width / 2;
@@ -133,18 +139,18 @@
 
             // Lógica biométrica
             if (modoArritmia) {
-                bpm = Math.min(176, bpm + 2);
-                spo2 = Math.max(85, spo2 - 0.15);
+                bpm = Math.min(176, bpm + 1.2);
+                spo2 = Math.max(85, spo2 - 0.08);
                 statusEl.innerText = "CRÍTICO: ARRITMIA";
                 statusEl.className = "status-alert";
                 
-                if (bpm > 150 && cooldownMed <= 0) {
+                if (bpm > 150 && cooldownMed <= 0 && injecoes > 0) {
                     dispararInjecao();
                 }
             } else {
-                bpm = Math.max(72, bpm - 1);
-                spo2 = Math.min(98, spo2 + 0.2);
-                if (bpm === 72) {
+                bpm = Math.max(72, bpm - 0.8);
+                spo2 = Math.min(98, spo2 + 0.15);
+                if (bpm <= 75) {
                     statusEl.innerText = "NOMINAL";
                     statusEl.className = "status-active";
                 }
@@ -155,15 +161,18 @@
                 if (cooldownMed === 1) modoArritmia = false; 
             }
 
+            // Atualização dos textos de telemetria
+            bpmEl.innerText = `${Math.round(bpm)} BPM`;
+            spo2El.innerText = `${Math.round(spo2)}%`;
+            injEl.innerText = `0${injecoes}/05`;
+            doseEl.innerText = doseRecente;
+
             gerarPontoECG();
 
-            // ==========================================
-            // NOVO: VISÃO INTERNA DO CAPACETE (ESTILO IRON MAN)
-            // ==========================================
-            ctx.strokeStyle = modoArritmia ? 'rgba(255, 51, 51, 0.2)' : 'rgba(0, 255, 102, 0.15)';
-            ctx.lineWidth = 4;
+            // VISÃO INTERNA DO CAPACETE (ESTILO IRON MAN HUD)
+            ctx.strokeStyle = modoArritmia ? 'rgba(255, 51, 51, 0.25)' : 'rgba(0, 255, 102, 0.18)';
+            ctx.lineWidth = 3;
             
-            // Desenho dos arcos curvos da viseira interna ocular
             let raioViseira = Math.min(canvas.width, canvas.height) * 0.42;
             ctx.beginPath();
             ctx.arc(centerX, centerY, raioViseira, 0.15 * Math.PI, 0.85 * Math.PI);
@@ -172,43 +181,89 @@
             ctx.arc(centerX, centerY, raioViseira, 1.15 * Math.PI, 1.85 * Math.PI);
             ctx.stroke();
 
-            // Elementos de mira holográfica centrais do olhar
-            ctx.strokeStyle = modoArritmia ? 'rgba(255, 51, 51, 0.4)' : 'rgba(0, 255, 102, 0.3)';
+            // Mira holográfica central
+            ctx.strokeStyle = modoArritmia ? 'rgba(255, 51, 51, 0.5)' : 'rgba(0, 255, 102, 0.4)';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.arc(centerX, centerY - 40, 25, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY - 40, 25 + Math.sin(pulsoHUD) * 2, 0, Math.PI * 2);
             ctx.stroke();
             
-            // Cantoneiras holográficas táticas envolventes
-            let d = 50 + Math.sin(pulsoHUD) * 2;
+            // Cantoneiras holográficas
+            let d = 55 + Math.sin(pulsoHUD) * 3;
             ctx.beginPath();
             ctx.moveTo(centerX - d, centerY - 80); ctx.lineTo(centerX - d - 10, centerY - 80); ctx.lineTo(centerX - d - 10, centerY - 60);
             ctx.moveTo(centerX + d, centerY - 80); ctx.lineTo(centerX + d + 10, centerY - 80); ctx.lineTo(centerX + d + 10, centerY - 60);
             ctx.stroke();
 
-            // ==========================================
-            // DESENHO DO PROJETO ORIGINAL CONCLUÍDO (ECG E COMPONENTES)
-            // ==========================================
+            // DESENHO DA LINHA DO ECG
             let ecgYBase = centerY - 40;
-            
-            // Desenha a linha dinâmica do batimento cardíaco holográfico
             ctx.lineWidth = 2.5;
             ctx.strokeStyle = modoArritmia ? '#ff3333' : '#00ff66';
-            ctx.shadowBlur = 8;
+            ctx.shadowBlur = 10;
             ctx.shadowColor = modoArritmia ? '#ff3333' : '#00ff66';
             ctx.beginPath();
             
-            let inicioX = centerX - (maxPontos * 2.4) / 2;
+            let inicioX = centerX - (maxPontos * 2.5) / 2;
 
             for (let i = 0; i < ecgPontos.length; i++) {
-                let x = inicioX + (i * 2.4);
+                let x = inicioX + (i * 2.5);
                 let y = ecgYBase + ecgPontos[i];
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
             ctx.stroke();
-            ctx.shadowBlur = 0; // Reseta efeitos de brilho
+            ctx.shadowBlur = 0;
 
-            // Painel físico inferior de injetores médicos
+            // PAINEL INFERIOR DE INJETORES MÉDICOS (VAPORIZADORES)
             ctx.strokeStyle = modoArritmia ? '#ff3333' : '#00ff66';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1.5;
+            
+            let totalSlots = 5;
+            let larguraSlot = 28;
+            let espacamento = 12;
+            let larguraTotal = (totalSlots * larguraSlot) + ((totalSlots - 1) * espacamento);
+            let startX = centerX - (larguraTotal / 2);
+            let startY = centerY + 90;
+
+            for (let i = 0; i < totalSlots; i++) {
+                let sx = startX + i * (larguraSlot + espacamento);
+                
+                // Moldura da ampola de injeção
+                ctx.strokeStyle = i < injecoes ? '#00ff66' : 'rgba(255, 51, 51, 0.4)';
+                ctx.strokeRect(sx, startY, larguraSlot, 40);
+
+                if (i < injecoes) {
+                    ctx.fillStyle = 'rgba(0, 255, 102, 0.4)';
+                    ctx.fillRect(sx + 3, startY + 10, larguraSlot - 6, 26);
+                }
+            }
+
+            // PARTICULAS DE VAPORIZAÇÃO MÉDICA
+            for (let i = particulasMedicas.length - 1; i >= 0; i--) {
+                let p = particulasMedicas[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vida -= 0.015;
+
+                if (p.vida <= 0) {
+                    particulasMedicas.splice(i, 1);
+                    continue;
+                }
+
+                ctx.fillStyle = `rgba(0, 255, 102, ${p.vida})`;
+                ctx.shadowColor = '#00ff66';
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.tamanho, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // Inicializa a renderização
+        draw();
+    </script>
+</body>
+</html>
